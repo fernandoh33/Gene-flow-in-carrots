@@ -1,5 +1,8 @@
 #estimate genetic diversity and divergence across the genome using pixy, the program should be installed locally in the server or personal laptop (good luck with that), here is the website: https://github.com/ksamuk/pixy
-#once installed, the program is very simple to use and surprisingly fast, this is the code to estimate pi, dxy, and fst in 150 kb windows across the genome for populations indicated in the pops.file.txt
+#once installed, the program is very simple to use and surprisingly fast, this is the code to estimate pi, dxy, and fst in 150 kb windows across the genome for populations indicated in the pops.file.txt (two columns file with SampleID PopID without header)
+#please note that pixy uses both invariant and variant (biallelic) sites, however, the data should be filtered for quality, missing rate, minimum depth, etc. For filtering while retaining invariant sites, you can use vcftools as follows:
+vcftools --gzvcf raw.vcf.vcf.gz --minQ 30 --min-meanDP 4 --keep final.individuals.txt --max-missing 0.7 --max-alleles 2 --remove-indels --recode --stdout|bgzip -c > vcf.with.invariant.sites.vcf.gz
+#then run pixy
 pixy --stats pi,dxy,fst --vcf vcf.with.invariant.sites.vcf.gz --populations pops.file.txt --window_size 150000 --n_cores 16 --output_folder out_pixy/ --output_prefix out_pixy_150kb  
 
 #Basic filtering for population genomics include minimum allele frequency and low linkage disequilibrium
