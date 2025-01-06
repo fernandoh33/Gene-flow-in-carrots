@@ -1,10 +1,35 @@
 #estimate genetic diversity and divergence across the genome using pixy
 
 #Basic filtering for population genomics include minimum allele frequency and low linkage disequilibrium
-#I use plink for this
+#I use plink for filtering, the script for compute canada but it is similar to other servers
+
+#!/bin/bash
+#SBATCH --account=your_account
+#SBATCH --time=0-4:00
+#SBATCH --ntasks=1
+#SBATCH --mem=50G
+#SBATCH --cpus-per-task=30
+
+module load StdEnv/2020
+module load plink/1.9b_6.21-x86_64
+module load vcftools/0.1.16
+
+VCF=input.vcf.gz
+OUTVCF=filtered.lowLD.50.10.0.2.maf0.05.vcf.gz
+INPUTADM=lowLD.maf0.05
+
+plink --vcf $VCF --double-id --allow-extra-chr --set-missing-var-ids @:# --indep-pairwise 50 10 0.2 --threads 30 --out lowLD.50.10.0.2
+tr : $'\t' < lowLD.50.10.0.2.prune.in > lowLD.50.10.0.2.snps.txt
+vcftools --gzvcf $VCF --positions lowLD.50.10.0.2.snps.txt --maf 0.05 --recode --stdout|bgzip -c > $OUTVCF
 
 #run admixture
-
+plink --vcf $OUTVCF --make-bed --double-id --out $INPUTADM --allow-extra-chr --set-missing-var-ids @:#
+#the next two commands are needed to replace chromosome names when they have non-numeric names (often the case), which is not accepted by admixture
+#to check the name of your chromosomes, you can use bcftools
+#bcftools query -f '%CHROM\n' $VCF | head
+sed -i 's/Ha412HOChr//g' $INPUTADM.bim
+awk '{$1=0;print $0}' $INPUTADM.bim > $INPUTADM.bim.tmp
+for i in `seq 1 10`;do  admixture --cv=10 $INPUTADM.bed $i -j32 > out.admixture.${i}.out;done
 
 #in R
 #average the proportion of admixture for individual populations
