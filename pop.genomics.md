@@ -13,6 +13,7 @@
 module load StdEnv/2020
 module load plink/1.9b_6.21-x86_64
 module load vcftools/0.1.16
+module load admixture/1.3.0
 
 VCF=input.vcf.gz
 OUTVCF=filtered.lowLD.50.10.0.2.maf0.05.vcf.gz
