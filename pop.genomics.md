@@ -1,4 +1,5 @@
 #estimate genetic diversity and divergence across the genome using pixy
+pixy --stats pi,dxy,fst --vcf vcf.with.invariant.sites.vcf.gz --populations pops.file.txt --window_size 150000 --n_cores 16 --output_folder out_pixy/ --output_prefix out_pixy_150kb  
 
 #Basic filtering for population genomics include minimum allele frequency and low linkage disequilibrium
 #I use plink for filtering, the script for compute canada but it is similar to other servers
