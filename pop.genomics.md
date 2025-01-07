@@ -1,8 +1,11 @@
 #estimate genetic diversity and divergence across the genome using pixy, the program should be installed locally in the server or personal laptop (good luck with that), here is the website: https://github.com/ksamuk/pixy
 #once installed, the program is very simple to use and surprisingly fast, this is the code to estimate pi, dxy, and fst in 150 kb windows across the genome for populations indicated in the pops.file.txt (two columns file with SampleID PopID without header)
 #please note that pixy uses both invariant and variant (biallelic) sites, however, the data should be filtered for quality, missing rate, minimum depth, etc. For filtering while retaining invariant sites, you can use vcftools as follows:
+
 vcftools --gzvcf raw.vcf.vcf.gz --minQ 30 --min-meanDP 4 --keep final.individuals.txt --max-missing 0.7 --max-alleles 2 --remove-indels --recode --stdout|bgzip -c > vcf.with.invariant.sites.vcf.gz
+
 #then run pixy
+
 pixy --stats pi,dxy,fst --vcf vcf.with.invariant.sites.vcf.gz --populations pops.file.txt --window_size 150000 --n_cores 16 --output_folder out_pixy/ --output_prefix out_pixy_150kb  
 
 #Basic filtering for population genomics include minimum allele frequency and low linkage disequilibrium
@@ -36,12 +39,18 @@ plink --vcf $OUTVCF --make-bed --double-id --out $INPUTADM --allow-extra-chr --s
 sed -i 's/Ha412HOChr//g' $INPUTADM.bim
 awk '{$1=0;print $0}' $INPUTADM.bim > $INPUTADM.bim.tmp
 for i in `seq 1 10`;do  admixture --cv=10 $INPUTADM.bed $i -j32 > out.admixture.${i}.out;done
+#add sample and pop info to admixture results
+paste pops.file.txt lowLD.maf0.05.2.Q > ancestry.K2.txt
 
 #in R
-#average the proportion of admixture for individual populations
+#average the ancestry proportions by populations
+
+ancestry.K2=read.table("ancestry.K2.txt", header=FALSE)
+mean_pops_ancestry_K2=aggregate(V3 ~ V2, data=ancestry.k2, FUN=mean)
 
 #run pca using snprelate
 #you only need to change the name of the vcf with yours
+
 library(SNPRelate)
 vcf="yourvcf.vcf.gz"
 snpgdsVCF2GDS(vcf, out.fn = "yourfile.gds", method="copy.num.of.ref")
