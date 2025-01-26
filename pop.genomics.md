@@ -9,7 +9,7 @@ vcftools --gzvcf raw.vcf.vcf.gz --minQ 30 --min-meanDP 4 --keep final.individual
 pixy --stats pi,dxy,fst --vcf vcf.with.invariant.sites.vcf.gz --populations pops.file.txt --window_size 150000 --n_cores 16 --output_folder out_pixy/ --output_prefix out_pixy_150kb  
 
 #Basic filtering for population genomics include minimum allele frequency and low linkage disequilibrium
-#I use plink for filtering, the script for compute canada but it is similar to other servers
+#I use plink for filtering, the script is designed for compute canada but it should be similar for other servers
 
 #!/bin/bash
 #SBATCH --account=your_account
@@ -38,9 +38,10 @@ plink --vcf $OUTVCF --make-bed --double-id --out $INPUTADM --allow-extra-chr --s
 #bcftools query -f '%CHROM\n' $VCF | head
 sed -i 's/Ha412HOChr//g' $INPUTADM.bim
 awk '{$1=0;print $0}' $INPUTADM.bim > $INPUTADM.bim.tmp
-for i in `seq 1 10`;do  admixture --cv=10 $INPUTADM.bed $i -j32 > out.admixture.${i}.out;done
-#add sample and pop info to admixture results
-paste pops.file.txt lowLD.maf0.05.2.Q > ancestry.K2.txt
+for i in `seq 1 10`;
+do  admixture --cv=10 $INPUTADM.bed $i -j32 > out.admixture.${i}.out;
+do paste pops.file.txt lowLD.maf0.05.$i.Q > ancestry.K$i.txt;
+done
 
 #in R
 #average the ancestry proportions by populations
@@ -52,7 +53,7 @@ mean_pops_ancestry_K2=aggregate(V3 ~ V2, data=ancestry.k2, FUN=mean)
 #you only need to change the name of the vcf with yours
 
 library(SNPRelate)
-vcf="yourvcf.vcf.gz"
+vcf="filtered.lowLD.50.10.0.2.maf0.05.vcf.gz"
 snpgdsVCF2GDS(vcf, out.fn = "yourfile.gds", method="copy.num.of.ref")
 genofile=snpgdsOpen("yourfile.gds")
 #the next two lines can be used to filter by ld and/or missing rate, in order to use the same set of snps in all analyses, I prefer to filter the vcfs before and use all the snps here
@@ -65,5 +66,10 @@ snpgdsClose(my.genofile)
 #plot pca differentiating wild and cultivated samples
 
 #run abba-baba test to identify populations with evidence of gene flow with cultivated carrot
+#I use Dsuite to perform abba-baba tests (https://github.com/millanek/Dsuite), you need three files for this analysis: 1) a vcf with all the samples, including at least one outgroup sample; 2) a TREE.txt file indicating the trio of populations you want to evaluate: (Outgroup,(CROP,(NAT,INT)));and 3) a SETS.txt file with two columns: the first with the name of the samples in the vcf file and the second with the population/group information (e.g., Outgroup, CROP, NAT, or INV)
+#IMPORTANT: instead of subsetting the vcfs, you can ignore samples using the xxx keyword
 
-#back in r, run gradient forest models to identify the environmental variables that better explain introgression frequencies
+./Dsuite Dtrios -t TREE.txt -c -o out_pop.txt INPUT_FILE.vcf SETS.txt
+
+
+#back in r, run gradient forest models to identify the environmental variables that better explain introgression proportions
