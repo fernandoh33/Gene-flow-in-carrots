@@ -28,22 +28,16 @@ module load vcftools/0.1.16
 #demultiplex the libraries using process_radtags, libraries are in a folder named libraries/ and demultiplex samples are output to fastq.samples or fastq.samples/PE.samples/
 #note all libraries but one were single-end sequenced, for SE and PE libraries I mapped the reads separately
 #the barcode file include the sample name and the unique barcode for that sample, with no header, here is an example:
-#        TGCT	JOBRU00005_001
-#        CAGCT	JOBRU00005_004
-#        GACTC	JOBRU00005_005
-#        ACGTC	JOBRU00005_006
-#        CACGTT	JOBRU00005_009
-#        GTTAGC	JOBRU00005_010
-#        AGCATT	JOBRU00005_015
-#        CTCCGA	JOBRU00005_018
-#        TTGGCA	JOBRU00005_020
-#        GATGTC	JOBRU00007_001
+#        TGCT	sample_001
+#        CAGCT	sample_004
+#        GACTC	sample_005
+#        ACGTC	sample_006
 
 #for demultiplexing, you need to provide the restriction enzyme used, if ddRADseq was used, use --renz-1 enzyme1 --renz-2 enzyme2 instead of -e. Here is the manual of process_radtags with detailed information and the name of supported restriction enzymes (https://catchenlab.life.illinois.edu/stacks/comp/process_radtags.php)
-#SE libraries
-process_radtags -f libraries/s_CCH17ANXX_s_7_fastq.txt.gz -b barcodes_CCH17ANXX_7.fixed -o fastq.samples/ -c -q -r --threads 48 --inline-null -e apeKI 
-#PE libraries
-process_radtags -1 libraries/Brunet-Simon-6-30-2023-Daucus_S2_L007_R1_001.fastq.gz -2 libraries/Brunet-Simon-6-30-2023-Daucus_S2_L007_R2_001.fastq.gz -b barcodes_Daucus_S2_L007.fixed -o fastq.samples/ -c -q -r --threads 48 --inline-null -e apeKI
+#single-end libraries
+process_radtags -f libraries/library_SE_fastq.gz -b barcodes_SE -o fastq.samples/ -c -q -r --threads 48 --inline-null -e apeKI 
+#paired-end libraries
+process_radtags -1 libraries/library_L007_R1_001.fastq.gz -2 libraries/library_L007_R2_001.fastq.gz -b barcodes_PE -o fastq.samples/ -c -q -r --threads 48 --inline-null -e apeKI
 
 #Create Sequence List
 ls $FASTQ | grep $Fw | sed 's/.1.fq.gz\|.2.fq.gz//' | sort -u > samples_list.txt
@@ -70,5 +64,5 @@ bcftools mpileup --threads 48 -a AD,DP,SP -Ou -f $GENOME -Q 30 -q 20 $BAM/*.bam 
 
 #filter raw vcf to produce a vcf with only snps (used in most of the analyses) and a vcf including invariant sites, used in some analyses (e.g., in pixy to estimate pi or dxy)
 vcftools --gzvcf $VCF --min-meanDP 4 --mac 2 --max-missing 0.7 --min-alleles 2 --max-alleles 2 --remove-indels --recode --stdout|bgzip -c > carrot.v3ref.only.snps.vcf.gz
-vcftools --gzvcf $VCF --min-meanDP 4 --mac 2 --max-missing 0.7 --max-alleles 2 --remove-indels --recode --stdout|bgzip -c > carrot.v3ref.with.invariant.sites.vcf.gz
+vcftools --gzvcf $VCF --min-meanDP 4 --max-missing 0.7 --max-alleles 2 --remove-indels --recode --stdout|bgzip -c > carrot.v3ref.with.invariant.sites.vcf.gz
 
